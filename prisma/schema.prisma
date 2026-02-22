@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------
+// Enums
+// -------------------------
+
+enum TransactionType {
+  INCOME    // 収入
+  EXPENSE   // 支出
+  TRANSFER  // 振替（Asset 間の移動）
+}
+
+enum AssetType {
+  CASH          // 現金
+  BANK_ACCOUNT  // 銀行口座
+  CREDIT_CARD   // クレジットカード
+  INVESTMENT    // 投資
+  OTHER
+}
+
+// -------------------------
+// Models
+// -------------------------
+
+// カテゴリ（食費・家賃など）
+model Category {
+  id           Int              @id @default(autoincrement())
+  name         String           @unique // e.g. "食費", "家賃", "給与"
+  type         TransactionType  // このカテゴリが対象とする取引種別
+  transactions Transaction[]
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+// 資産（口座・現金など）
+model Asset {
+  id               Int           @id @default(autoincrement())
+  name             String        @unique // e.g. "三菱UFJ普通口座", "財布"
+  type             AssetType
+  balance          Decimal       @default(0) @db.Decimal(15, 2)
+  currency         String        @default("JPY")
+
+  // このAssetを元口座とする取引
+  transactions     Transaction[] @relation("SourceAsset")
+  // TRANSFER の宛先口座として参照される取引
+  transferTargets  Transaction[] @relation("TargetAsset")
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+// 入出金トランザクション
+model Transaction {
+  id           Int             @id @default(autoincrement())
+  type         TransactionType
+  amount       Decimal         @db.Decimal(15, 2) // 常に正の値
+  date         DateTime        // 取引発生日
+  note         String?         // メモ（任意）
+
+  // 元口座（必須）
+  assetId      Int
+  asset        Asset           @relation("SourceAsset", fields: [assetId], references: [id])
+
+  // 振替先口座（TRANSFER の場合のみ使用）
+  toAssetId    Int?
+  toAsset      Asset?          @relation("TargetAsset", fields: [toAssetId], references: [id])
+
+  // カテゴリ（TRANSFER の場合は省略可）
+  categoryId   Int?
+  category     Category?       @relation(fields: [categoryId], references: [id])
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
