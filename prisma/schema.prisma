@@ -17,14 +17,14 @@ datasource db {
 enum TransactionType {
   INCOME    // 収入
   EXPENSE   // 支出
-  TRANSFER  // 振替（Asset 間の移動）
+  TRANSFER  // 振替（Account 間の移動）
 }
 
-enum AssetType {
+enum AccountType {
   CASH          // 現金
   BANK_ACCOUNT  // 銀行口座
   CREDIT_CARD   // クレジットカード
-  INVESTMENT    // 投資
+  INVESTMENT    // 証券・投資口座
   OTHER
 }
 
@@ -32,51 +32,55 @@ enum AssetType {
 // Models
 // -------------------------
 
-// カテゴリ（食費・家賃など）
+// カテゴリ（食費・光熱費・投資など）
 model Category {
   id           Int              @id @default(autoincrement())
-  name         String           @unique // e.g. "食費", "家賃", "給与"
-  type         TransactionType  // このカテゴリが対象とする取引種別
+  name         String           @unique  // e.g. "食費", "光熱費", "投資", "給与"
+  // type を省略可能にすることで、「投資」のように収入・支出両方に使えるカテゴリを許容
+  type         TransactionType?
   transactions Transaction[]
 
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }
 
-// 資産（口座・現金など）
-model Asset {
+// 口座・財布（銀行口座、カード、現金など）
+model Account {
   id               Int           @id @default(autoincrement())
-  name             String        @unique // e.g. "三菱UFJ普通口座", "財布"
-  type             AssetType
+  name             String        @unique  // e.g. "三菱UFJ普通口座", "楽天カード", "財布"
+  type             AccountType
   balance          Decimal       @default(0) @db.Decimal(15, 2)
   currency         String        @default("JPY")
 
-  // このAssetを元口座とする取引
-  transactions     Transaction[] @relation("SourceAsset")
-  // TRANSFER の宛先口座として参照される取引
-  transferTargets  Transaction[] @relation("TargetAsset")
+  // この口座が出金元・収入先となる取引
+  transactions     Transaction[] @relation("SourceAccount")
+  // TRANSFER の振替先口座として参照される取引
+  transferTargets  Transaction[] @relation("TargetAccount")
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 }
 
-// 入出金トランザクション
+// 入出金トランザクション（いつ・どこで・いくら）
 model Transaction {
   id           Int             @id @default(autoincrement())
   type         TransactionType
-  amount       Decimal         @db.Decimal(15, 2) // 常に正の値
-  date         DateTime        // 取引発生日
+  amount       Decimal         @db.Decimal(15, 2)  // 常に正の値
+  date         DateTime        // いつ：取引発生日
+  merchant     String?         // どこで：店舗名・振込先など（任意）
   note         String?         // メモ（任意）
 
-  // 元口座（必須）
-  assetId      Int
-  asset        Asset           @relation("SourceAsset", fields: [assetId], references: [id])
+  // いくら → amount フィールド（上記）
+
+  // 出金元・収入先の口座（必須）
+  accountId    Int
+  account      Account         @relation("SourceAccount", fields: [accountId], references: [id])
 
   // 振替先口座（TRANSFER の場合のみ使用）
-  toAssetId    Int?
-  toAsset      Asset?          @relation("TargetAsset", fields: [toAssetId], references: [id])
+  toAccountId  Int?
+  toAccount    Account?        @relation("TargetAccount", fields: [toAccountId], references: [id])
 
-  // カテゴリ（TRANSFER の場合は省略可）
+  // カテゴリ（任意、TRANSFER は省略可）
   categoryId   Int?
   category     Category?       @relation(fields: [categoryId], references: [id])
 
