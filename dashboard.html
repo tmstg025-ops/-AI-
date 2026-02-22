@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>-AI- Repository Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 {
+      font-size: 20px;
+      color: #f0f6fc;
+      font-weight: 600;
+    }
+    header .repo-path {
+      font-size: 14px;
+      color: #8b949e;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-blue { background: #1f6feb; color: #fff; }
+    .badge-green { background: #238636; color: #fff; }
+    .badge-yellow { background: #9e6a03; color: #fff; }
+    .badge-gray { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 32px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f0f6fc;
+    }
+    .card-sub {
+      font-size: 13px;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+
+    .section { margin-bottom: 24px; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .branch-list { display: flex; flex-direction: column; gap: 8px; }
+    .branch-item {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .branch-name {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      color: #79c0ff;
+    }
+    .branch-current .branch-name { color: #56d364; }
+    .branch-current { border-color: #238636; }
+
+    .commit-list { display: flex; flex-direction: column; gap: 0; }
+    .commit-item {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 0;
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border-bottom: none;
+    }
+    .commit-item:first-child { border-radius: 6px 6px 0 0; }
+    .commit-item:last-child { border-radius: 0 0 6px 6px; border-bottom: 1px solid #30363d; }
+    .commit-hash {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      color: #79c0ff;
+      white-space: nowrap;
+      background: #21262d;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .commit-msg { font-size: 14px; color: #c9d1d9; flex: 1; }
+    .commit-type {
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .type-docs { background: #1f6feb22; color: #79c0ff; border: 1px solid #1f6feb44; }
+    .type-chore { background: #6e768122; color: #8b949e; border: 1px solid #6e768144; }
+    .type-feat { background: #23863622; color: #56d364; border: 1px solid #23863644; }
+    .type-fix { background: #da363322; color: #f85149; border: 1px solid #da363344; }
+
+    .md-viewer {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .md-tabs {
+      display: flex;
+      border-bottom: 1px solid #30363d;
+      background: #0d1117;
+    }
+    .md-tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      border-right: 1px solid #30363d;
+      color: #8b949e;
+    }
+    .md-tab.active { background: #161b22; color: #f0f6fc; border-bottom: 2px solid #1f6feb; margin-bottom: -1px; }
+    .md-content {
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.7;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .md-content h1 { font-size: 24px; color: #f0f6fc; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #30363d; }
+    .md-content h2 { font-size: 18px; color: #f0f6fc; margin: 20px 0 8px; }
+    .md-content h3 { font-size: 15px; color: #e6edf3; margin: 16px 0 6px; }
+    .md-content p { margin-bottom: 10px; }
+    .md-content ul, .md-content ol { padding-left: 20px; margin-bottom: 10px; }
+    .md-content li { margin-bottom: 4px; }
+    .md-content code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: #21262d;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: #ff7b72;
+    }
+    .md-content pre {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 14px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+    .md-content pre code { background: none; padding: 0; color: #c9d1d9; }
+    .md-content hr { border: none; border-top: 1px solid #30363d; margin: 16px 0; }
+    .md-content strong { color: #f0f6fc; }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .dot-green { background: #56d364; }
+    .dot-yellow { background: #e3b341; }
+    .dot-gray { background: #6e7681; }
+  </style>
+</head>
+<body>
+  <header>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="#8b949e"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    <h1>-AI-</h1>
+    <span class="repo-path">tmstg025-ops / -AI-</span>
+    <span class="badge badge-blue">master</span>
+  </header>
+
+  <div class="container">
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">コミット数</div>
+        <div class="card-value">3</div>
+        <div class="card-sub">master ブランチ</div>
+      </div>
+      <div class="card">
+        <div class="card-title">ブランチ数</div>
+        <div class="card-value">2</div>
+        <div class="card-sub">ローカル（master + claude/*）</div>
+      </div>
+      <div class="card">
+        <div class="card-title">現在のブランチ</div>
+        <div class="card-value" style="font-size:18px; color:#56d364;">master</div>
+        <div class="card-sub"><span class="status-dot dot-green"></span>クリーン</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
+
+      <div class="section">
+        <div class="section-title">ブランチ一覧</div>
+        <div class="branch-list">
+          <div class="branch-item branch-current">
+            <span class="branch-name">★ master</span>
+            <span class="badge badge-green">現在地</span>
+          </div>
+          <div class="branch-item">
+            <span class="branch-name">claude/reset-from-main-aUNHp</span>
+            <span class="badge badge-gray">local</span>
+          </div>
+          <div class="branch-item">
+            <span class="branch-name">origin/claude/reset-from-main-aUNHp</span>
+            <span class="badge badge-gray">remote</span>
+          </div>
+          <div class="branch-item">
+            <span class="branch-name">origin/claude/claude-md-mlx8fu4fw0g6o490-X8E3n</span>
+            <span class="badge badge-gray">remote</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">コミット履歴（master）</div>
+        <div class="commit-list">
+          <div class="commit-item">
+            <span class="commit-hash">718920c</span>
+            <span class="commit-msg">add CLAUDE.md with project conventions</span>
+            <span class="commit-type type-docs">docs</span>
+          </div>
+          <div class="commit-item">
+            <span class="commit-hash">6a03c4e</span>
+            <span class="commit-msg">remove CLAUDE.md to recreate from scratch</span>
+            <span class="commit-type type-chore">chore</span>
+          </div>
+          <div class="commit-item">
+            <span class="commit-hash">d56f908</span>
+            <span class="commit-msg">add initial CLAUDE.md with project conventions</span>
+            <span class="commit-type type-docs">docs</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section">
+      <div class="section-title">CLAUDE.md プレビュー（master）</div>
+      <div class="md-viewer">
+        <div class="md-tabs">
+          <div class="md-tab active">CLAUDE.md</div>
+        </div>
+        <div class="md-content">
+          <h1>CLAUDE.md</h1>
+          <p>This file provides guidance to AI assistants (Claude and others) working in this repository.</p>
+          <hr>
+          <h2>Repository Overview</h2>
+          <p>This repository is currently in initial setup. This CLAUDE.md will be updated as the project evolves with source code, tooling, and conventions.</p>
+          <hr>
+          <h2>Git Workflow</h2>
+          <h3>Branch Naming</h3>
+          <ul>
+            <li>Feature branches: <code>feature/&lt;short-description&gt;</code></li>
+            <li>Bug fixes: <code>fix/&lt;short-description&gt;</code></li>
+            <li>AI-assisted branches: <code>claude/&lt;task-id&gt;-&lt;slug&gt;</code></li>
+            <li>Releases: <code>release/&lt;version&gt;</code></li>
+          </ul>
+          <h3>Commit Messages</h3>
+          <p>Follow the Conventional Commits specification:</p>
+          <pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;short summary&gt;
+
+[optional body]
+
+[optional footer]</code></pre>
+          <p><strong>Types:</strong> <code>feat</code>, <code>fix</code>, <code>docs</code>, <code>style</code>, <code>refactor</code>, <code>test</code>, <code>chore</code>, <code>ci</code></p>
+          <h3>Push Rules</h3>
+          <ul>
+            <li>Never force-push to <code>main</code> or <code>master</code></li>
+            <li>Always push to your designated feature branch</li>
+            <li>Branch names for AI sessions must match the pattern: <code>claude/&lt;task-id&gt;-&lt;slug&gt;</code></li>
+            <li>Use <code>git push -u origin &lt;branch-name&gt;</code> for first-time pushes</li>
+          </ul>
+          <hr>
+          <h2>Development Workflow</h2>
+          <h3>Before Starting Work</h3>
+          <ol>
+            <li>Check out or create the correct feature branch</li>
+            <li>Pull the latest changes: <code>git pull origin &lt;branch-name&gt;</code></li>
+            <li>Review any open issues or PR descriptions for context</li>
+          </ol>
+          <h3>Making Changes</h3>
+          <ol>
+            <li>Read existing files before modifying them</li>
+            <li>Keep changes focused — one concern per commit</li>
+            <li>Do not introduce unrelated refactors alongside feature work</li>
+            <li>Prefer editing existing files over creating new ones</li>
+          </ol>
+          <hr>
+          <h2>Code Conventions</h2>
+          <h3>General Principles</h3>
+          <ul>
+            <li><strong>Simplicity first:</strong> Write the minimum code needed to solve the problem</li>
+            <li><strong>No premature abstraction:</strong> Avoid creating utilities or helpers for one-time use</li>
+            <li><strong>No speculative features:</strong> Only implement what is explicitly requested</li>
+            <li><strong>Delete unused code:</strong> Do not comment out code or leave dead code in place</li>
+          </ul>
+          <h3>Security</h3>
+          <ul>
+            <li>Never commit secrets, API keys, tokens, or passwords</li>
+            <li>Use environment variables for all sensitive configuration</li>
+            <li>Validate all external input at system boundaries</li>
+          </ul>
+          <hr>
+          <h2>AI Assistant Guidelines</h2>
+          <h3>What to Do</h3>
+          <ul>
+            <li>Read files before modifying them</li>
+            <li>Use the todo list to track multi-step tasks</li>
+            <li>Make focused, minimal changes</li>
+            <li>Commit frequently with descriptive messages</li>
+          </ul>
+          <h3>What Not to Do</h3>
+          <ul>
+            <li>Do not push to branches other than the designated feature branch</li>
+            <li>Do not commit generated artifacts, build outputs, or node_modules</li>
+            <li>Do not add unrequested features, refactors, or "improvements"</li>
+            <li>Do not amend commits that have already been pushed</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
