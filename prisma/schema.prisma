@@ -6,84 +6,36 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// -------------------------
-// Enums
-// -------------------------
-
-enum TransactionType {
-  INCOME    // 収入
-  EXPENSE   // 支出
-  TRANSFER  // 振替（Account 間の移動）
-}
-
-enum AccountType {
-  CASH          // 現金
-  BANK_ACCOUNT  // 銀行口座
-  CREDIT_CARD   // クレジットカード
-  INVESTMENT    // 証券・投資口座
-  OTHER
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // -------------------------
 // Models
 // -------------------------
 
-// カテゴリ（食費・光熱費・投資など）
-model Category {
-  id           Int              @id @default(autoincrement())
-  name         String           @unique  // e.g. "食費", "光熱費", "投資", "給与"
-  // type を省略可能にすることで、「投資」のように収入・支出両方に使えるカテゴリを許容
-  type         TransactionType?
-  transactions Transaction[]
-
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-}
-
-// 口座・財布（銀行口座、カード、現金など）
 model Account {
-  id               Int           @id @default(autoincrement())
-  name             String        @unique  // e.g. "三菱UFJ普通口座", "楽天カード", "財布"
-  type             AccountType
-  balance          Decimal       @default(0) @db.Decimal(15, 2)
-  currency         String        @default("JPY")
-
-  // この口座が出金元・収入先となる取引
-  transactions     Transaction[] @relation("SourceAccount")
-  // TRANSFER の振替先口座として参照される取引
-  transferTargets  Transaction[] @relation("TargetAccount")
-
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id           Int           @id @default(autoincrement())
+  name         String
+  balance      Decimal
+  type         String
+  transactions Transaction[]
 }
 
-// 入出金トランザクション（いつ・どこで・いくら）
+model Category {
+  id           Int           @id @default(autoincrement())
+  name         String
+  type         String
+  transactions Transaction[]
+}
+
 model Transaction {
-  id           Int             @id @default(autoincrement())
-  type         TransactionType
-  amount       Decimal         @db.Decimal(15, 2)  // 常に正の値
-  date         DateTime        // いつ：取引発生日
-  merchant     String?         // どこで：店舗名・振込先など（任意）
-  note         String?         // メモ（任意）
-
-  // いくら → amount フィールド（上記）
-
-  // 出金元・収入先の口座（必須）
-  accountId    Int
-  account      Account         @relation("SourceAccount", fields: [accountId], references: [id])
-
-  // 振替先口座（TRANSFER の場合のみ使用）
-  toAccountId  Int?
-  toAccount    Account?        @relation("TargetAccount", fields: [toAccountId], references: [id])
-
-  // カテゴリ（任意、TRANSFER は省略可）
-  categoryId   Int?
-  category     Category?       @relation(fields: [categoryId], references: [id])
-
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  description String
+  amount      Decimal
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  accountId   Int
+  account     Account  @relation(fields: [accountId], references: [id])
 }
